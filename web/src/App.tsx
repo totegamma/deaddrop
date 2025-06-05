@@ -4,6 +4,7 @@ import "./App.css";
 function App() {
     const [pickupKey, setPickupKey] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [downloadKey, setDownloadKey] = useState("");
     const [downloadError, setDownloadError] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
@@ -17,13 +18,24 @@ function App() {
         if (files.length === 0) return;
         setUploading(true);
         setPickupKey(null);
+        setUploadProgress(0);
 
         const file = files[0];
         try {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "/deaddrop", true);
             xhr.setRequestHeader("Content-Type", file.type);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    setUploadProgress(percent);
+                }
+            };
+
             xhr.onload = () => {
+                setUploading(false);
+                setUploadProgress(0);
                 if (xhr.status === 200) {
                     const data = JSON.parse(xhr.responseText);
                     setPickupKey(data.id);
@@ -33,14 +45,17 @@ function App() {
             };
 
             xhr.onerror = () => {
+                setUploading(false);
+                setUploadProgress(0);
                 setPickupKey("Error uploading file");
             };
             xhr.send(file);
 
         } catch (err) {
+            setUploading(false);
+            setUploadProgress(0);
             setPickupKey("Error uploading file");
         }
-        setUploading(false);
     };
 
     // Handle manual file select
@@ -48,12 +63,23 @@ function App() {
         if (e.target.files && e.target.files.length > 0) {
             setUploading(true);
             setPickupKey(null);
+            setUploadProgress(0);
             const file = e.target.files[0];
             try {
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "/deaddrop", true);
                 xhr.setRequestHeader("Content-Type", file.type);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percent = Math.round((event.loaded / event.total) * 100);
+                        setUploadProgress(percent);
+                    }
+                };
+
                 xhr.onload = () => {
+                    setUploading(false);
+                    setUploadProgress(0);
                     if (xhr.status === 200) {
                         const data = JSON.parse(xhr.responseText);
                         setPickupKey(data.id);
@@ -63,14 +89,17 @@ function App() {
                 };
 
                 xhr.onerror = () => {
+                    setUploading(false);
+                    setUploadProgress(0);
                     setPickupKey("Error uploading file");
                 };
                 xhr.send(file);
 
             } catch (err) {
+                setUploading(false);
+                setUploadProgress(0);
                 setPickupKey("Error uploading file");
             }
-            setUploading(false);
         }
     };
 
@@ -124,7 +153,14 @@ function App() {
                     onChange={handleFileChange}
                 />
                 {uploading ? (
-                    <span>Uploading...</span>
+                    <span>
+                        Uploading... {uploadProgress > 0 ? (
+                            <span>
+                                <progress value={uploadProgress} max={100} style={{ width: "120px", verticalAlign: "middle" }} />
+                                {" "}{uploadProgress}%
+                            </span>
+                        ) : null}
+                    </span>
                 ) : (
                     <span>
                         <b>Drop here to upload</b>
