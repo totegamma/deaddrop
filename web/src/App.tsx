@@ -32,7 +32,8 @@ function App() {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "/deaddrop", true);
             xhr.setRequestHeader("Content-Type", file.type);
-            xhr.setRequestHeader("Content-Disposition", `attachment; filename="${file.name}"`);
+            const filename = encodeURIComponent(file.name);
+            xhr.setRequestHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable) {
@@ -60,6 +61,7 @@ function App() {
             xhr.send(file);
 
         } catch (err) {
+            console.error("Upload error:", err);
             setUploading(false);
             setUploadProgress(0);
             setPickupKey("Error uploading file");
@@ -73,6 +75,7 @@ function App() {
             setPickupKey(null);
             setFileExt(null);
             setUploadProgress(0);
+
             const file = e.target.files[0];
             // Store file extension
             const extMatch = file.name.match(/\.([a-zA-Z0-9]+)$/);
@@ -81,6 +84,8 @@ function App() {
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "/deaddrop", true);
                 xhr.setRequestHeader("Content-Type", file.type);
+                const filename = encodeURIComponent(file.name);
+                xhr.setRequestHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
                 xhr.upload.onprogress = (event) => {
                     if (event.lengthComputable) {
@@ -127,7 +132,7 @@ function App() {
             const disposition = res.headers.get("Content-Disposition");
             if (disposition) {
                 const match = disposition.match(/filename="?([^"]+)"?/);
-                if (match) filename = match[1];
+                if (match) filename = decodeURIComponent(match[1]);
             }
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
