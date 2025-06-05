@@ -9,7 +9,7 @@ function App() {
     const [downloadKey, setDownloadKey] = useState("");
     const [downloadError, setDownloadError] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
-    const [copiedId, setCopiedId] = useState(true);
+    const [copiedId, setCopiedId] = useState(false);
     const [copiedLink, setCopiedLink] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
