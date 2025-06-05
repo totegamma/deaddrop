@@ -25,6 +25,7 @@ function App() {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "/deaddrop", true);
             xhr.setRequestHeader("Content-Type", file.type);
+            xhr.setRequestHeader("Content-Disposition", `attachment; filename="${file.name}"`);
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable) {

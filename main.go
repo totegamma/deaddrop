@@ -1,16 +1,18 @@
 package main
 
 import (
-	"path/filepath"
+	"bufio"
+	"fmt"
+	"mime"
 	"net/http"
 	"net/http/httputil"
-	"bufio"
-	"mime"
 	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/rs/xid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/xid"
 )
 
 func main() {
@@ -41,7 +43,9 @@ func main() {
 	})
 
 	e.GET("/deaddrop/:id", func(c echo.Context) error {
-		id := c.Param("id")
+		rawid := c.Param("id")
+		split := strings.Split(rawid, ".")
+		id := split[0]
 		filePath := filepath.Join("/tmp", id)
 		file, err := os.Open(filePath)
 		if err != nil {
@@ -58,18 +62,34 @@ func main() {
 			return echo.NewHTTPError(http.StatusInternalServerError, "リクエストの読み込みに失敗しました: "+err.Error())
 		}
 
-		ext, err := mime.ExtensionsByType(req.Header.Get("Content-Type"))
-		if err == nil && len(ext) > 0 {
-			c.Response().Header().Set("Content-Disposition", "attachment; filename="+id+ext[0])
+		filename := ""
+		_, params, err := mime.ParseMediaType(req.Header.Get("Content-Disposition"))
+		if err == nil {
+			fmt.Println(params)
+			if fn, ok := params["filename"]; ok {
+				filename = fn
+			}
+		} else {
+			fmt.Println("content-disposition:", req.Header.Get("Content-Disposition"))
+			fmt.Println("Content-Dispositionヘッダーの解析に失敗:", err)
 		}
 
-		return c.Stream(http.StatusOK, req.Header.Get("Content-Type"), req.Body)
+		if filename == "" {
+			ext := ".data"
+			exts, err := mime.ExtensionsByType(req.Header.Get("Content-Type"))
+			if err == nil && len(exts) > 0 {
+				ext = exts[0]
+			}
 
+			filename = id + ext
+		}
+
+		c.Response().Header().Set("Content-Disposition", "attachment; filename="+filename)
+		return c.Stream(http.StatusOK, req.Header.Get("Content-Type"), req.Body)
 	})
 
 	staticDir := "./web/dist"
 	e.Static("/", staticDir)
-
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
