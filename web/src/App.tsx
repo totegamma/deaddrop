@@ -3,11 +3,14 @@ import "./App.css";
 
 function App() {
     const [pickupKey, setPickupKey] = useState<string | null>(null);
+    const [fileExt, setFileExt] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [downloadKey, setDownloadKey] = useState("");
     const [downloadError, setDownloadError] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
+    const [copiedId, setCopiedId] = useState(true);
+    const [copiedLink, setCopiedLink] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Handle file drop/upload
@@ -18,9 +21,13 @@ function App() {
         if (files.length === 0) return;
         setUploading(true);
         setPickupKey(null);
+        setFileExt(null);
         setUploadProgress(0);
 
         const file = files[0];
+        // Store file extension
+        const extMatch = file.name.match(/\.([a-zA-Z0-9]+)$/);
+        setFileExt(extMatch ? extMatch[1] : "");
         try {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "/deaddrop", true);
@@ -64,8 +71,12 @@ function App() {
         if (e.target.files && e.target.files.length > 0) {
             setUploading(true);
             setPickupKey(null);
+            setFileExt(null);
             setUploadProgress(0);
             const file = e.target.files[0];
+            // Store file extension
+            const extMatch = file.name.match(/\.([a-zA-Z0-9]+)$/);
+            setFileExt(extMatch ? extMatch[1] : "");
             try {
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "/deaddrop", true);
@@ -171,9 +182,79 @@ function App() {
                 )}
             </div>
             {pickupKey && (
-                <div className="pickup-key">
+                <div className="pickup-key" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span>Pickup Key:</span>
-                    <code>{pickupKey}</code>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <code>{pickupKey}</code>
+                        <div
+                            style={{ display: "flex", position: "relative" }}
+                        >
+                            {copiedId && 
+                                <span style={{ 
+                                        color: "#4caf50", 
+                                        fontSize: "0.9em",
+                                        position: "absolute",
+                                        top: "-30px",
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                    }}>
+                                    Copied!
+                                </span>
+                            }
+                            <button
+                                title="Copy ID"
+                                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                                onClick={async () => {
+                                    if (pickupKey) {
+                                        await navigator.clipboard.writeText(pickupKey);
+                                        setCopiedId(true);
+                                        setTimeout(() => setCopiedId(false), 1000);
+                                    }
+                                }}
+                                aria-label="Copy ID"
+                            >
+                                {/* Clipboard Icon */}
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <rect x="6" y="2" width="8" height="2" rx="1" fill="#555"/>
+                                    <rect x="4" y="4" width="12" height="14" rx="2" stroke="#555" strokeWidth="2" fill="none"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div
+                            style={{ display: "flex", position: "relative" }}
+                        >
+                            {copiedLink && 
+                                <span style={{ 
+                                    color: "#4caf50",
+                                    fontSize: "0.9em",
+                                    position: "absolute",
+                                    top: "-30px",
+                                    left: "50%",
+                                    transform: "translateX(-50%)",
+                                }}>Copied!</span>}
+                            <button
+                                title="Copy Link"
+                                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                                onClick={async () => {
+                                    if (pickupKey && fileExt) {
+                                        const link = `${window.location.origin}/deaddrop/${pickupKey}.${fileExt}`;
+                                        await navigator.clipboard.writeText(link);
+                                        setCopiedLink(true);
+                                        setTimeout(() => setCopiedLink(false), 1000);
+                                    }
+                                }}
+                                aria-label="Copy Link"
+                                disabled={!fileExt}
+                            >
+                                {/* Link Icon */}
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7.5 12.5L12.5 7.5" stroke="#555" strokeWidth="2" strokeLinecap="round"/>
+                                    <rect x="2" y="11" width="7" height="7" rx="3.5" stroke="#555" strokeWidth="2"/>
+                                    <rect x="11" y="2" width="7" height="7" rx="3.5" stroke="#555" strokeWidth="2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
             <div className="download-section">
